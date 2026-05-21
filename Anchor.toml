@@ -9,10 +9,15 @@ skip-lint = false
 voting = "9UKZFA4opT5zYuq5SidXdeLLMpxGMtGMybYMJfL2LyKZ"
 
 [provider]
-cluster = "localnet"
-wallet = "~/.config/solana/id.json"
+cluster = "devnet"
+#url = "https://solana-devnet.infura.io/v3/70ec61545bb04231a5b51068bb7c330f"
+wallet = "./bosiRUeLUGZ4d8Cc38WpsC54eHJbc22946EVq9sdTqN.json"
+
 
 [scripts]
 test = "cargo test"
 
 [hooks]
+
+[workspace]
+types = "./idls/"
