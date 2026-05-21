@@ -18,6 +18,3 @@ wallet = "./bosiRUeLUGZ4d8Cc38WpsC54eHJbc22946EVq9sdTqN.json"
 test = "cargo test"
 
 [hooks]
-
-[workspace]
-types = "./idls/"
