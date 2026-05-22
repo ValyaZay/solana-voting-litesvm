@@ -68,10 +68,7 @@ fn initialize_poll_helper(
     poll_pda
 }
 
-fn initialize_candidate_helper(ctx: &mut AnchorContext, signer: &anchor_litesvm::Keypair, poll_id: u64, candidate_name: &str) -> Address {
-    let poll_pda = get_poll_pda(poll_id);
-    ctx.svm.assert_account_exists(&poll_pda);
-
+fn initialize_candidate_helper(ctx: &mut AnchorContext, signer: &anchor_litesvm::Keypair, poll_pda: Address, poll_id: u64, candidate_name: &str) -> Address {
     let candidate_pda = get_candidate_pda(poll_id, candidate_name);
 
     let ix = ctx
@@ -133,8 +130,8 @@ fn test_init_candidates() {
     let candidate_name_2 = "Bob";
 
     // Act
-    let candidate_pda_1 = initialize_candidate_helper(&mut ctx, &signer, poll_id, candidate_name_1);
-    let candidate_pda_2 = initialize_candidate_helper(&mut ctx, &signer, poll_id, candidate_name_2);
+    let candidate_pda_1 = initialize_candidate_helper(&mut ctx, &signer, poll_pda, poll_id, candidate_name_1);
+    let candidate_pda_2 = initialize_candidate_helper(&mut ctx, &signer, poll_pda, poll_id, candidate_name_2);
 
     // Assert
     let poll_account: PollAccount = ctx.get_account(&poll_pda).unwrap();
@@ -147,4 +144,45 @@ fn test_init_candidates() {
     let candidate_account_2: CandidateAccount = ctx.get_account(&candidate_pda_2).unwrap();
     assert_eq!(candidate_account_2.candidate_name, candidate_name_2);
     assert_eq!(candidate_account_2.candidate_votes, 0);
+}
+
+#[test]
+fn test_vote() {
+    // Arrange
+    let mut ctx = setup();
+    let authority = ctx.svm.create_funded_account(10_000_000_000).unwrap();
+
+    let poll_id = 1;
+    let start_time: i64 = 0;
+    let end_time: i64 = i64::MAX;
+    let poll_name = "Test Poll";
+    let poll_description = "A test poll for voting";
+    let poll_pda = initialize_poll_helper(&mut ctx, &authority, poll_id, start_time, end_time, poll_name, poll_description);
+
+    let candidate_name = "Joe";
+    let candidate_pda = initialize_candidate_helper(&mut ctx, &authority, poll_pda, poll_id, candidate_name);
+
+    let voter = ctx.svm.create_funded_account(10_000_000_000).unwrap();
+
+    // Act
+    let ix = ctx
+        .program()
+        .accounts(accounts::Vote {
+            signer: voter.pubkey(),
+            candidate_account: candidate_pda,
+            poll_account: poll_pda,
+        })
+        .args(args::Vote{
+            _poll_id: poll_id,
+            _candidate_name: candidate_name.to_string(),
+        })
+        .instruction()
+        .unwrap();
+    let result = ctx.execute_instruction(ix, &[&voter]).unwrap();
+
+    // Assert
+    result.assert_success();
+
+    let candidate_account: CandidateAccount = ctx.get_account(&candidate_pda).unwrap();
+    assert_eq!(candidate_account.candidate_votes, 1);
 }
