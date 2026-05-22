@@ -29,7 +29,8 @@ pub mod voting {
     pub fn vote(ctx: Context<Vote>, _poll_id: u64, _candidate_name: String) -> Result<()> {
         let poll_account = &ctx.accounts.poll_account;
         let now = Clock::get()?.unix_timestamp;
-        require!(now > poll_account.poll_voting_start && now < poll_account.poll_voting_end, Errors::PollNotActive);
+        require!(now >= poll_account.poll_voting_start, Errors::PollNotStarted);
+        require!(now <= poll_account.poll_voting_end, Errors::PollAlreadyEnded);
         
         ctx.accounts.candidate_account.candidate_votes += 1;
 
